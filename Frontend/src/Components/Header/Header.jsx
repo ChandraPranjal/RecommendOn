@@ -12,7 +12,8 @@ import ListItemText from '@mui/material/ListItemText';
 import Select from '@mui/material/Select';
 import Checkbox from '@mui/material/Checkbox';
 import { Typography } from '@mui/material';
-
+import Speech from 'react-speech';
+import axios from 'axios';
 const names = [
   'en',
   'ja',
@@ -32,6 +33,8 @@ const MenuProps = {
 
 const Header = () => {
   const [personName, setPersonName] = React.useState(["ja"]);
+  var storedText = localStorage.getItem('speechToTextResult');
+  const [text, setText] = useState("");
 
   const handleChange = (event) => {
     const {
@@ -41,7 +44,7 @@ const Header = () => {
       // On autofill we get a stringified value.
       typeof value === 'string' ? value.split(',') : value,
     );
-    
+
   };
 
   // Initialize the toggle state from local storage
@@ -75,11 +78,54 @@ const Header = () => {
   }
 
   const _onVocalResult = (result) => {
+
+    // Save the result in local storage
+    localStorage.setItem('speechToTextResult', result);
     setResult(result)
   }
-  useEffect(()=>{
+  useEffect(() => {
     localStorage.setItem('lang', JSON.stringify(personName))
-  },[personName])
+    
+  }, [personName,])
+
+  useEffect(()=>{
+    localStorage.setItem('speechToTextResult', text);
+
+  },[text])
+
+  const updateSpeechToTextResult = async () => {
+    const options = {
+      method: 'POST',
+      url: 'https://chatgpt-api8.p.rapidapi.com/',
+      headers: {
+        'content-type': 'application/json',
+        'X-RapidAPI-Key': 'c3352459d8mshdcb7aa2d4164be4p1944aejsn34e79c19f2ec',
+        'X-RapidAPI-Host': 'chatgpt-api8.p.rapidapi.com',
+      },
+      data: [
+        {
+          content: localStorage.getItem('speechToTextResult'), // Get the stored text
+          role: 'user',
+        },
+      ],
+    };
+
+    try {
+      const response = await axios.request(options);
+
+      const apiResponse = response.data;
+
+      // Overwrite the "speechToTextResult" in local storage with the API response text
+      // if(apiResponse?.text) localStorage.setItem('speechToTextResult', apiResponse.text);
+      if(apiResponse?.text) setText(apiResponse?.text);
+
+      console.log('Updated speechToTextResult:', apiResponse.text);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
   return (
 
     <nav className="header">
@@ -90,48 +136,51 @@ const Header = () => {
         <Link to="/recent">Recently Added</Link>
         <Link to="/mylist">My List</Link>
       </div>
+      <div className="components">
+        <Typography sx={{ maxWidth: 100, }}>
+          <FormControl sx={{ m: 1, width: 100 }}>
+            <InputLabel id="demo-multiple-checkbox-label">Lang</InputLabel>
+            <Select
+              labelId="demo-multiple-checkbox-label"
+              id="demo-multiple-checkbox"
+              multiple
+              value={personName}
+              onChange={handleChange}
+              input={<OutlinedInput label="Select Language" placeholder='Select Language' />}
+              renderValue={(selected) => selected.join(', ')}
+              MenuProps={MenuProps}
+            >
+              {names.map((name) => (
+                <MenuItem key={name} value={name}>
+                  <Checkbox checked={personName.indexOf(name) > -1} />
+                  <ListItemText primary={name} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl></Typography>
+        <ImSearch />
 
-      <Typography sx={{maxWidth:100, }}>
-      <FormControl sx={{ m: 1, width: 100 }}>
-        <InputLabel id="demo-multiple-checkbox-label">Lang</InputLabel>
-        <Select
-          labelId="demo-multiple-checkbox-label"
-          id="demo-multiple-checkbox"
-          multiple
-          value={personName}
-          onChange={handleChange}
-          input={<OutlinedInput label="Select Language" placeholder='Select Language'/>}
-          renderValue={(selected) => selected.join(', ')}
-          MenuProps={MenuProps}
-        >
-          {names.map((name) => (
-            <MenuItem key={name} value={name}>
-              <Checkbox checked={personName.indexOf(name) > -1} />
-              <ListItemText primary={name} />
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl></Typography>
-      <ImSearch />
+        <span style={{ position: 'relative' }}>
+          <Vocal
+            onStart={_onVocalStart}
+            onResult={_onVocalResult}
+            style={{ width: 16, position: 'absolute', right: 10, top: -2 }}
+          />
+          <input defaultValue={result} style={{ width: 300, height: 40 }} />
+        </span>
+        <button onClick={updateSpeechToTextResult}>Update Speech to Text Result</button>
+        <Speech text={text || "Welcome to react speech"} />
 
-      <span style={{ position: 'relative' }}>
-        <Vocal
-          onStart={_onVocalStart}
-          onResult={_onVocalResult}
-          style={{ width: 16, position: 'absolute', right: 10, top: -2 }}
-        />
-        <input defaultValue={result} style={{ width: 300, height: 40 }} />
-      </span>
-
-      {/* Family-Friendly Toggle Button */}
-      <label>
-        <input
-          type="checkbox"
-          checked={isFamilyFriendly}
-          onChange={toggleFamilyFriendly}
-        />
-        Family Friendly
-      </label>
+        {/* Family-Friendly Toggle Button */}
+        <label>
+          <input
+            type="checkbox"
+            checked={isFamilyFriendly}
+            onChange={toggleFamilyFriendly}
+          />
+          Family Friendly
+        </label>
+      </div>
     </nav>
   );
 }

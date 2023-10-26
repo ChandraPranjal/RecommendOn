@@ -117,7 +117,7 @@ async def recommend(
     movie1_row = df[df['id'] == movie1]
     movie2_row = df[df['id'] == movie2]
 
-    if movie1_row.empty or movie2_row.empty:
+    if movie1_row is None or movie2_row is None:
         return {"error": "Invalid movie id(s)"}
 
     movie1, movie1_languages = movie1_row.iloc[0]['overview'], movie1_row.iloc[0]['original_language']
@@ -147,8 +147,8 @@ async def recommend(
 
         recommendations_info = recommendations_info[recommendations_info['id'].isin(family_friendly_recommendations['id'])]
 
-    return recommendations_info.to_dict('records')
+    return {"recommendations": recommendations_info.to_dict('records')}  # Corrected indentation
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

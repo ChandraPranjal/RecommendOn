@@ -93,8 +93,8 @@ const Home = () => {
     
         // Define the request data with default values
         const requestData = {
-          movie1: 354912,
-          movie2: 497698,
+          movie1: 317442,
+          movie2: 244478,
           languages: JSON.parse(localStorage.getItem('lang')),
           adult: familyFriendly ? 1 : 0, // Set "adult" based on the familyFriendly value
         };
